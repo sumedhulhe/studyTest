@@ -1,6 +1,8 @@
 package com.kokonetworks.theapp;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -19,9 +21,10 @@ class Field extends LinearLayout {
 
     private int score;
     private Mole mole;
-
+    private boolean isGameEnded=false;
     private final int ACTIVE_TAG_KEY = 873374234;
-
+    private boolean isCircleClicked=true;
+    private int newIndex=0;
     public Field(Context context) {
         super(context);
         initializeViews(context);
@@ -74,10 +77,13 @@ class Field extends LinearLayout {
                 @Override
                 public void onClick(View view) {
                     boolean active = (boolean) view.getTag(ACTIVE_TAG_KEY);
-                    if (active) {
+                    if (active && !isGameEnded) {
                         score += mole.getCurrentLevel() * 2;
+                        isCircleClicked=true;
+                        listener.onCorrectAnswer(score);
                     } else {
                         mole.stopHopping();
+                        view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.orange_oval));
                         listener.onGameEnded(score);
                     }
                 }
@@ -86,8 +92,11 @@ class Field extends LinearLayout {
 
         mole = new Mole(this);
         mole.startHopping();
+        isCircleClicked=true;
     }
-
+    public void theGameIsEnded(boolean isEnded){
+        isGameEnded=isEnded;
+    }
     public int getCurrentCircle() {
         return currentCircle;
     }
@@ -100,12 +109,28 @@ class Field extends LinearLayout {
     }
 
     public void setActive(int index) {
-        mainHandler.post(() -> {
-            resetCircles();
-            circles[index].setBackground(ContextCompat.getDrawable(getContext(), R.drawable.hole_active));
-            circles[index].setTag(ACTIVE_TAG_KEY, true);
-            currentCircle = index;
-        });
+
+            mainHandler.post(() -> {
+                if(!isCircleClicked){
+                    mole.stopHopping();
+                    // view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.orange_oval));
+                    listener.onGameEnded(score);
+                }else {
+                    resetCircles();
+                    circles[index].setBackground(ContextCompat.getDrawable(getContext(), R.drawable.hole_active));
+                    circles[index].setTag(ACTIVE_TAG_KEY, true);
+                    currentCircle = index;
+                    isCircleClicked = false;
+
+                    if(index!=8){
+                        newIndex =index+1;
+                    }
+                    else{ newIndex=0;}
+                    circles[newIndex].setBackground(ContextCompat.getDrawable(getContext(), R.drawable.ic_launcher_foreground));
+
+                }
+            });
+
     }
 
     public Listener getListener() {
@@ -120,5 +145,7 @@ class Field extends LinearLayout {
         void onGameEnded(int score);
 
         void onLevelChange(int level);
+
+        void onCorrectAnswer(int score);
     }
 }
